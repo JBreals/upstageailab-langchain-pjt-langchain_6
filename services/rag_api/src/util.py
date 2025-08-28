@@ -31,6 +31,7 @@ def convert_to_documents(results: List[dict]) -> List[Document]:
         doc = Document(page_content=page_content, metadata=metadata)
         documents.append(doc)
     
+
     return documents
 
 def get_last_user_query(messages: List[BaseMessage]) -> str:

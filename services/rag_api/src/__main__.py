@@ -142,7 +142,6 @@ async def start_phase2(request: Phase2Request):
           "question": request.question,
           "sbp_title": request.sbp_title,
           "is_chat_mode": True,
-          "messages":[("user", request.question)],
           "sbp_found": True,
           "thread_id": request.thread_id,
         }
@@ -150,8 +149,7 @@ async def start_phase2(request: Phase2Request):
             inputs, config, stream_mode="updates"
         ):
             if "generate_answer" in event:
-                answer_chunk = event["generate_answer"]["messages"][-1]
-                print(f"answer_chunk: {answer_chunk}")
+                answer_chunk = event["generate_answer"]["answer"]
                 # JSON 스트림 형식으로 데이터를 전송
                 yield f"data: {json.dumps({'answer_chunk': answer_chunk})}\n\n"
 

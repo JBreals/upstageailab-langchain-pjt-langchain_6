@@ -25,7 +25,7 @@ def format_context(context: List[Document]) -> str:
     
     return "\n\n".join(context_parts)
 
-def mock_llm_generate(messages, context: List[Document], llm_api_key: str) -> str:
+def mock_llm_generate(question: str, context: List[Document], llm_api_key: str) -> str:
     """
     검색된 문서를 바탕으로 최종 답변을 생성하는 LLM 함수.
     논문들을 분석하여 구조화된 답변을 생성합니다.
@@ -91,14 +91,14 @@ Directly answer the user's question. Synthesize the key findings from all papers
     
     # 체인을 실행하여 답변을 생성합니다.
     answer = chain.invoke({
-        "question": messages,
+        "question": question,
         "context_str": context_str
     })
     print(f"\n\nanswer: {answer}\n\n")
     
     return answer
 
-def mock_llm_generate_no_rag(messages, llm_api_key: str) -> str:
+def mock_llm_generate_no_rag(question: str, llm_api_key: str) -> str:
     """
     RAG가 필요하지 않은 경우 사용하는 LLM 함수.
     LLM의 기반지식과 대화 내역들을 이용하여 답변  
@@ -145,7 +145,7 @@ Directly answer the user's question.
     
     # 체인을 실행하여 답변을 생성합니다.
     answer = chain.invoke({
-        "question": messages
+        "question": question
     })
     print(f"\n\nanswer: {answer}\n\n")
     

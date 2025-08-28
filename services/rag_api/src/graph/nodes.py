@@ -1,7 +1,5 @@
 from dotenv import load_dotenv
 import os
-from langchain_core.messages import HumanMessage
-
 
 from .state import GraphState
 from ..core.database import mock_db_select, mock_db_insert, mock_db_follow_up_select
@@ -10,7 +8,7 @@ from ..core.retriever import UPSTAGE_API_KEY, TAVILY_SEARCH, augment_prompt
 from ..core.llm import mock_llm_generate, rag_judge, mock_llm_generate_no_rag
 from ..core.get_emb import get_emb_model, get_emb
 from langgraph.types import interrupt
-from ..util import convert_to_documents, get_last_user_query, set_last_user_query
+from ..util import convert_to_documents
 
 load_dotenv()
 
@@ -31,14 +29,12 @@ def select_paper_node(state: GraphState):
 
     if not state.get("is_chat_mode"):
         value = interrupt({"paper_info": paper_info})
-        print(f"state: {state}")
 
         if paper_info and paper_info["is_sbp"]:
             return {"sbp_found": True, "sbp_title": paper_info["paper_meta"]["title"], "paper_search_result": paper_info["paper_meta"]}
         else:
             return {"sbp_found": False, "sbp_title": ""}
     else:
-        print(f"state: {state}")
         return {"paper_search_result": paper_info["paper_meta"]}
 
     # if paper_info and paper_info["is_sbp"]:
@@ -97,8 +93,7 @@ def retrieve_and_select_node(state: GraphState):
         last_user_query = augment_prompt(last_user_query, UPSTAGE_API_KEY, TAVILY_SEARCH)
 
     paper_info = state["paper_search_result"]
-    
-    query_vec = get_emb(get_emb_model(), [last_user_query])[0]
+    query_vec = get_emb(get_emb_model(), [state["question"]])[0]
     k = 5
     db_follow_up_docs = mock_db_follow_up_select(paper_info, query_vec, k)
 
@@ -108,16 +103,16 @@ def retrieve_and_select_node(state: GraphState):
 def generate_answer_node(state: GraphState):
     """:param state: The current graph state. :return: New state with the final answer."""
     print("\n--- 노드 실행: generate_answer_node ---")
-    messages = state["messages"]
+    question = state["question"]
     
     print(f"\n\nstate['rag_judgement']: {state['rag_judgement']}\n\n")
 
     if state["rag_judgement"] == "RAG":
         context = state["retrieved_docs"]
-        answer = mock_llm_generate(messages, context, llm_api_key = os.getenv("UPSTAGE_API_KEY"))
+        answer = mock_llm_generate(question, context, llm_api_key = os.getenv("UPSTAGE_API_KEY"))
     else:
-        answer = mock_llm_generate_no_rag(messages, llm_api_key = os.getenv("UPSTAGE_API_KEY"))
-    return {"messages": [answer]}
+        answer = mock_llm_generate_no_rag(question, llm_api_key = os.getenv("UPSTAGE_API_KEY"))
+    return {"answer": answer}
 
 def should_search_web(state: GraphState) -> str:
     """:param state: The current graph state. :return: The name of the next node to call."""
