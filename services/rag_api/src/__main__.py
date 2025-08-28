@@ -129,12 +129,10 @@ async def phase1_retry(request: Phase1Request):
 async def start_phase2(request: Phase2Request):
     """중단된 워크플로우를 이어받아 Phase 2를 실행하고, 최종 답변을 스트리밍으로 반환합니다.
 
-    :param Phase2Request request: question(=message), history, thread_id, sbp_title 을 전달받는다.
+    :param Phase2Request request: question(=message), thread_id, sbp_title 을 전달받는다.
     """
     print(f"\n start_phase2 호출\n")
     config = RunnableConfig(configurable={"thread_id": request.thread_id})
-
-    print("⚙️check history: ", request.history)
 
     async def stream_generator():
         # .stream()을 None 입력으로 호출하여 중단된 지점부터 실행 재개

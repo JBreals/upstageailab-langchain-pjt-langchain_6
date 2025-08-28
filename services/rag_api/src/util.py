@@ -41,3 +41,13 @@ def get_last_user_query(messages: List[BaseMessage]) -> str:
         if isinstance(message, HumanMessage):
             return message.content
     return ""
+
+def set_last_user_query(messages: List[BaseMessage], query: str) -> List[BaseMessage]:
+    """
+    Set the last user query to the messages.
+    """
+    for i in range(len(messages) - 1, -1, -1):
+        if isinstance(messages[i], HumanMessage):
+            messages[i].content = query
+            break
+    return messages

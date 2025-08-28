@@ -10,7 +10,7 @@ from ..core.retriever import UPSTAGE_API_KEY, TAVILY_SEARCH, augment_prompt
 from ..core.llm import mock_llm_generate, rag_judge, mock_llm_generate_no_rag
 from ..core.get_emb import get_emb_model, get_emb
 from langgraph.types import interrupt
-from ..util import convert_to_documents, get_last_user_query
+from ..util import convert_to_documents, get_last_user_query, set_last_user_query
 
 load_dotenv()
 
@@ -83,32 +83,31 @@ def rag_judge_node(state: GraphState):
     :return: 논문 초록 임베딩과 사용자 질문 임베딩 간 유사도를 계산하여 임계값을 넘으면 논문 초록 임베딩을 사용하고, 넘지 않으면 사용자 질문 임베딩을 사용한다.
     """
     print("\n--- 노드 실행: rag_judge_node ---")
-    question = state["question"]
+    question = get_last_user_query(state["messages"])
     judgement = rag_judge(question, os.getenv("UPSTAGE_API_KEY"))
     return {"rag_judgement": judgement}
     
 def retrieve_and_select_node(state: GraphState):
     """:param state: The current graph state. :return: New state with retrieved documents."""
     print("\n--- 노드 실행: retrieve_and_select_node ---")
+    last_user_query = get_last_user_query(state["messages"])
     use_prompt_augment = True
     if use_prompt_augment:
         ### prompt에서 키워드를 찾아 tavily search로 증강하고, 영어로 번역하는 함수.
-        augmented_question = augment_prompt(state['question'], UPSTAGE_API_KEY, TAVILY_SEARCH)
-        state['question'] = augmented_question # update state 
+        last_user_query = augment_prompt(last_user_query, UPSTAGE_API_KEY, TAVILY_SEARCH)
 
     paper_info = state["paper_search_result"]
-    last_user_query = get_last_user_query(state["messages"])
+    
     query_vec = get_emb(get_emb_model(), [last_user_query])[0]
     k = 5
     db_follow_up_docs = mock_db_follow_up_select(paper_info, query_vec, k)
 
     all_docs = convert_to_documents(db_follow_up_docs)
-    return {"retrieved_docs": all_docs}
+    return {"retrieved_docs": all_docs, "messages": set_last_user_query(state["messages"], last_user_query)}
 
 def generate_answer_node(state: GraphState):
     """:param state: The current graph state. :return: New state with the final answer."""
     print("\n--- 노드 실행: generate_answer_node ---")
-    question = state["question"]
     messages = state["messages"]
     
     print(f"\n\nstate['rag_judgement']: {state['rag_judgement']}\n\n")

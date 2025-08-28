@@ -160,11 +160,13 @@ def start_phase2(message: str, history: str, thread_id: str, sbp_title: str):
         return "오류: 먼저 논문을 검색해주세요."
     
     try: 
+        print(f"Sending data: {{'thread_id': {thread_id}, 'question': {message}, 'sbp_title': {sbp_title}}}")
         response = requests.post(
             f"{RAG_API_URL}/start_phase2",
-            json={"thread_id": thread_id, "question": message, "sbp_title": sbp_title, "history": history},
+            json={"thread_id": thread_id, "question": message, "sbp_title": sbp_title},
             stream=True
         )
+        print(f"Response: {response}")
         response.raise_for_status()
         
         # for문을 통해 스트림 응답을 처리합니다.
